@@ -1,9 +1,9 @@
-import express, { Application } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import { config } from './config';
-import routes from './routes';
-import { requestLogger, errorHandler } from './middleware';
+import express, { Application } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import { config } from "./config";
+import routes from "./routes";
+import { requestLogger, errorHandler } from "./middleware";
 
 export const createApp = (): Application => {
   const app = express();
@@ -17,12 +17,13 @@ export const createApp = (): Application => {
   app.use(express.urlencoded({ extended: true }));
 
   // Logging
-  if (config.nodeEnv !== 'test') {
+  if (config.nodeEnv !== "test") {
+    console.log("Hello Start");
     app.use(requestLogger);
   }
 
   // Routes
-  app.use('/api', routes);
+  app.use("/api/v1", routes);
 
   // Error handling
   app.use(errorHandler);
