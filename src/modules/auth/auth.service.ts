@@ -1,7 +1,7 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import crypto from "crypto";
-import { config } from "../config";
-import { User, TokenPayload, AuthTokens } from "../types";
+import { config } from "../../config";
+import { User, TokenPayload, AuthTokens } from "../../types";
 
 // In-memory stores (replace with database in production)
 const users: Map<string, User> = new Map();

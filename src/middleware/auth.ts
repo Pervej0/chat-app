@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { authService } from '../services/auth.service';
+import { authService } from '../modules/auth/auth.service';
 import { AuthRequest, ApiResponse, TokenPayload } from '../types';
 
 export const authMiddleware = (

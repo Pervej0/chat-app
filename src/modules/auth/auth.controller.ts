@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { authService } from '../../services/auth.service';
+import { authService } from './auth.service';
 import { AuthRequest, ApiResponse } from '../../types';
 
 interface RegisterBody {
