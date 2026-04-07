@@ -1,5 +1,4 @@
-import crypto from "crypto";
-import { User } from "../../types";
+import { IUser } from "../../models";
 import {
   hashPassword,
   verifyPassword,
@@ -7,56 +6,45 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
 } from "../../utils/auth.utils";
+import { userService } from "../user/user.service";
+import { TokenPayload, AuthTokens } from "../../types";
 
-// In-memory stores (replace with database in production)
-const users: Map<string, User> = new Map();
+// In-memory store for refresh tokens (could be moved to Redis in production)
 const refreshTokens: Set<string> = new Set();
 
-function createUser(email: string, password: string): User {
-  const id = crypto.randomUUID();
-  const user: User = {
-    id,
-    email,
-    passwordHash: hashPassword(password),
-    createdAt: new Date(),
-  };
-  users.set(id, user);
-  return user;
-}
-
-function findUserByEmail(email: string): User | undefined {
-  for (const user of users.values()) {
-    if (user.email === email) return user;
-  }
-  return undefined;
-}
-
-function findUserById(id: string): User | undefined {
-  return users.get(id);
-}
-
-function storeRefreshToken(token: string): void {
-  refreshTokens.add(token);
-}
-
-function removeRefreshToken(token: string): void {
-  refreshTokens.delete(token);
-}
-
-function isRefreshTokenValid(token: string): boolean {
-  return refreshTokens.has(token);
-}
-
 export const authService = {
-  generateTokens,
+  async createUser(email: string, password: string, name: string): Promise<IUser> {
+    return userService.create({ email, password, name });
+  },
+
+  async findUserByEmail(email: string): Promise<IUser | null> {
+    return userService.findByEmail(email);
+  },
+
+  async findUserById(id: string): Promise<IUser | null> {
+    return userService.findById(id);
+  },
+
+  generateTokens(user: IUser): AuthTokens {
+    const payload: TokenPayload = { userId: user.id, email: user.email };
+    return generateTokens({ id: user.id, email: user.email, passwordHash: "", createdAt: new Date() } as any);
+  },
+
   verifyAccessToken,
   verifyRefreshToken,
+
   hashPassword,
   verifyPassword,
-  createUser,
-  findUserByEmail,
-  findUserById,
-  storeRefreshToken,
-  removeRefreshToken,
-  isRefreshTokenValid,
+
+  storeRefreshToken(token: string): void {
+    refreshTokens.add(token);
+  },
+
+  removeRefreshToken(token: string): void {
+    refreshTokens.delete(token);
+  },
+
+  isRefreshTokenValid(token: string): boolean {
+    return refreshTokens.has(token);
+  },
 };

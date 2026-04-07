@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUser extends Document {
   email: string;
@@ -6,6 +6,7 @@ export interface IUser extends Document {
   name: string;
   createdAt: Date;
   updatedAt: Date;
+  id: string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -32,4 +33,11 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-export const User = mongoose.model<IUser>('User', userSchema);
+userSchema.virtual("id").get(function () {
+  return this._id.toString();
+});
+
+userSchema.set("toJSON", { virtuals: true });
+userSchema.set("toObject", { virtuals: true });
+
+export const User = mongoose.model<IUser>("User", userSchema);
