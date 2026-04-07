@@ -18,7 +18,6 @@ export const createApp = (): Application => {
 
   // Logging
   if (config.nodeEnv !== "test") {
-    console.log("Hello Start");
     app.use(requestLogger);
   }
 
