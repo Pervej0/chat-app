@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { config } from "./config";
+import { config } from "./core";
 import routes from "./routes";
 import { requestLogger, errorHandler } from "./middleware";
 

@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import crypto from "crypto";
-import { config } from "../config";
+import { config } from "../core";
 import { User, TokenPayload, AuthTokens } from "../types";
 
 // Password hashing constants

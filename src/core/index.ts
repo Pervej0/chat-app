@@ -6,6 +6,9 @@ export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  database: {
+    mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/claude-app',
+  },
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     accessExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
