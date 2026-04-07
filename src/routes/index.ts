@@ -4,7 +4,6 @@ import authRouter from "../modules/auth/auth.router";
 import userRouter from "../modules/user/user.router";
 
 const router = Router();
-
 const allRoutes = [
   { path: "/health", route: healthRouter },
   { path: "/auth", route: authRouter },
