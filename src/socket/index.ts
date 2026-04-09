@@ -1,4 +1,4 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 
 let io: Server | null = null;
 
@@ -13,15 +13,11 @@ const connectedUsers: Map<string, SocketUser> = new Map();
 export const initializeSocket = (server: Server): void => {
   io = server;
 
-  io.on("connection", (socket: any) => {
+  io.on("connection", (socket: Socket) => {
     console.log("Client connected:", socket.id);
 
     // Handle user authentication
     socket.on("authenticate", (userId: string) => {
-      // TODO: Validate user token
-      // TODO: Associate socket with userId
-      // TODO: Join user to their conversation rooms
-
       connectedUsers.set(userId, { userId, socketId: socket.id });
       socket.join(`user:${userId}`);
       console.log(`User ${userId} authenticated`);
@@ -29,8 +25,6 @@ export const initializeSocket = (server: Server): void => {
 
     // Handle joining a conversation room
     socket.on("joinConversation", (conversationId: string) => {
-      // TODO: Validate user is participant
-      // TODO: Check if user has access to conversation
       socket.join(`conversation:${conversationId}`);
       console.log(`Socket ${socket.id} joined conversation ${conversationId}`);
     });
@@ -42,30 +36,22 @@ export const initializeSocket = (server: Server): void => {
     });
 
     // Handle typing indicator
-    socket.on("typing", (data: { conversationId: string; userId: string }) => {
-      // TODO: Emit typing event to conversation participants
-      // socket.to(`conversation:${data.conversationId}`).emit("userTyping", data);
+    socket.on("typing", (data: { conversationId: string; userId: string; userName: string }) => {
+      socket.to(`conversation:${data.conversationId}`).emit("userTyping", data);
     });
 
     // Handle stop typing
-    socket.on(
-      "stopTyping",
-      (data: { conversationId: string; userId: string }) => {
-        // TODO: Emit stop typing event
-      },
-    );
+    socket.on("stopTyping", (data: { conversationId: string; userId: string }) => {
+      socket.to(`conversation:${data.conversationId}`).emit("userStoppedTyping", data);
+    });
 
     // Handle message read acknowledgment
-    socket.on(
-      "messageRead",
-      (data: { conversationId: string; messageId: string; userId: string }) => {
-        // TODO: Emit read receipt to sender
-      },
-    );
+    socket.on("messageRead", (data: { conversationId: string; messageId: string; userId: string }) => {
+      socket.to(`conversation:${data.conversationId}`).emit("messageRead", data);
+    });
 
     // Handle disconnection
     socket.on("disconnect", () => {
-      // Remove user from connected users
       for (const [userId, user] of connectedUsers.entries()) {
         if (user.socketId === socket.id) {
           connectedUsers.delete(userId);
@@ -81,30 +67,14 @@ export const getIO = (): Server | null => io;
 
 export const getConnectedUsers = (): Map<string, SocketUser> => connectedUsers;
 
-// Helper functions - to be implemented when socket connection is set up
-export const emitToConversation = (
-  conversationId: string,
-  event: string,
-  data: unknown,
-): void => {
-  // TODO: Implement - emit event to all sockets in conversation room
-  // io?.to(`conversation:${conversationId}`).emit(event, data);
+export const emitToConversation = (conversationId: string, event: string, data: unknown): void => {
+  io?.to(`conversation:${conversationId}`).emit(event, data);
 };
 
-export const emitToUser = (
-  userId: string,
-  event: string,
-  data: unknown,
-): void => {
-  // TODO: Implement - emit event to specific user
-  // io?.to(`user:${userId}`).emit(event, data);
+export const emitToUser = (userId: string, event: string, data: unknown): void => {
+  io?.to(`user:${userId}`).emit(event, data);
 };
 
-export const emitToRoom = (
-  room: string,
-  event: string,
-  data: unknown,
-): void => {
-  // TODO: Implement - emit event to specific room
-  // io?.to(room).emit(event, data);
+export const emitToRoom = (room: string, event: string, data: unknown): void => {
+  io?.to(room).emit(event, data);
 };

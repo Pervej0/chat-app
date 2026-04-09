@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { messageService } from "./message.service";
 import { conversationService } from "../conversation/conversation.service";
+import { emitToConversation } from "../../socket";
 import { AuthRequest, ApiResponse } from "../../types";
 
 interface CreateMessageBody {
@@ -79,8 +80,8 @@ export const createMessage = async (
       userId,
     );
 
-    // TODO: Emit socket event for real-time message delivery
-    // socketService.emitToConversation(conversationId, "newMessage", message);
+    // Emit to conversation participants
+    emitToConversation(conversationId, "newMessage", message);
 
     const response: ApiResponse = {
       success: true,
@@ -255,8 +256,7 @@ export const updateMessage = async (
       return;
     }
 
-    // TODO: Emit socket event for message update
-    // socketService.emitToConversation(message.conversationId, "messageUpdated", message);
+    emitToConversation(message.conversationId.toString(), "messageUpdated", message);
 
     const response: ApiResponse = {
       success: true,
@@ -281,7 +281,6 @@ export const deleteMessage = async (
 ): Promise<void> => {
   const userId = req.user?.userId;
   const messageId = req.params.messageId as string;
-  const { conversationId } = req.body;
 
   if (!userId) {
     const response: ApiResponse = {
@@ -294,6 +293,9 @@ export const deleteMessage = async (
   }
 
   try {
+    const message = await messageService.findById(messageId);
+    const conversationId = message?.conversationId.toString();
+
     const deleted = await messageService.delete(messageId, userId);
 
     if (!deleted) {
@@ -306,8 +308,9 @@ export const deleteMessage = async (
       return;
     }
 
-    // TODO: Emit socket event for message deletion
-    // socketService.emitToConversation(conversationId, "messageDeleted", { messageId });
+    if (conversationId) {
+      emitToConversation(conversationId, "messageDeleted", { messageId });
+    }
 
     const response: ApiResponse = {
       success: true,
@@ -376,8 +379,7 @@ export const markAsRead = async (
       userId,
     );
 
-    // TODO: Emit socket event for read receipts
-    // socketService.emitToConversation(conversationId, "messagesRead", { userId });
+    emitToConversation(conversationId, "messagesRead", { userId, ...result });
 
     const response: ApiResponse = {
       success: true,
