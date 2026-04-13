@@ -1,8 +1,9 @@
-import { Response } from "express";
+import { Response, NextFunction } from "express";
 import { messageService } from "./message.service";
 import { conversationService } from "../conversation/conversation.service";
 import { emitToConversation } from "../../socket";
 import { AuthRequest, ApiResponse } from "../../types";
+import { CustomError } from "../../middleware";
 
 interface CreateMessageBody {
   conversationId: string;
@@ -22,41 +23,26 @@ interface GetMessagesQuery {
 export const createMessage = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const { conversationId, content } = req.body as CreateMessageBody;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
   if (!conversationId || !content) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Conversation ID and content are required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
+    next(new CustomError("Conversation ID and content are required", 400));
     return;
   }
 
   try {
     const conversation =
       await conversationService.getConversation(conversationId);
-
     if (!conversation) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Conversation not found",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Conversation not found", 404));
       return;
     }
 
@@ -66,12 +52,7 @@ export const createMessage = async (
     );
 
     if (!isParticipant) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Access denied",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(403).json(response);
+      next(new CustomError("Access denied", 403));
       return;
     }
 
@@ -91,29 +72,20 @@ export const createMessage = async (
     };
     res.status(201).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to send message",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to send message", 500, error));
   }
 };
 
 export const getMessage = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const messageId = req.params.messageId as string;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
@@ -121,12 +93,7 @@ export const getMessage = async (
     const message = await messageService.findById(messageId);
 
     if (!message) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Message not found",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Message not found", 404));
       return;
     }
 
@@ -137,30 +104,21 @@ export const getMessage = async (
     };
     res.status(200).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to fetch message",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to fetch message", 500, error));
   }
 };
 
 export const getMessages = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const conversationId = req.params.conversationId as string;
   const { limit, before, after } = req.query as GetMessagesQuery;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
@@ -169,12 +127,7 @@ export const getMessages = async (
       await conversationService.getConversation(conversationId);
 
     if (!conversation) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Conversation not found",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Conversation not found", 404));
       return;
     }
 
@@ -184,12 +137,7 @@ export const getMessages = async (
     );
 
     if (!isParticipant) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Access denied",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(403).json(response);
+      next(new CustomError("Access denied", 403));
       return;
     }
 
@@ -206,40 +154,26 @@ export const getMessages = async (
     };
     res.status(200).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to fetch messages",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to fetch messages", 500, error));
   }
 };
 
 export const updateMessage = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const messageId = req.params.messageId as string;
   const { content } = req.body as UpdateMessageBody;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
   if (!content) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Content is required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
+    next(new CustomError("Content is required", 400));
     return;
   }
 
@@ -247,16 +181,15 @@ export const updateMessage = async (
     const message = await messageService.update(messageId, { content }, userId);
 
     if (!message) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Message not found or unauthorized",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Message not found or unauthorized", 404));
       return;
     }
 
-    emitToConversation(message.conversationId.toString(), "messageUpdated", message);
+    emitToConversation(
+      message.conversationId.toString(),
+      "messageUpdated",
+      message,
+    );
 
     const response: ApiResponse = {
       success: true,
@@ -266,12 +199,7 @@ export const updateMessage = async (
     };
     res.status(200).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to update message",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to update message", 500, error));
   }
 };
 

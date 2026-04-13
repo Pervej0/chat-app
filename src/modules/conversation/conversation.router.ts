@@ -3,10 +3,6 @@ import {
   createConversation,
   getConversations,
   getConversation,
-  sendMessage,
-  getMessages,
-  markAsRead,
-  getUnreadCount,
 } from "./conversation.controller";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -19,11 +15,5 @@ router.use(authMiddleware);
 router.post("/", createConversation);
 router.get("/", getConversations);
 router.get("/:conversationId", getConversation);
-
-// Message routes
-router.post("/:conversationId/messages", sendMessage);
-router.get("/:conversationId/messages", getMessages);
-router.put("/:conversationId/read", markAsRead);
-router.get("/:conversationId/unread", getUnreadCount);
 
 export default router;

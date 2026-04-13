@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import { Message, IMessage } from "../../models/Message";
+import { Conversation } from "../../models/Conversation";
 
 export interface CreateMessageDto {
   conversationId: string;
@@ -17,6 +18,13 @@ export const messageService = {
       sender: new Types.ObjectId(senderId),
       content: dto.content,
     });
+
+    // Update conversation's lastMessage and lastMessageAt
+    await Conversation.findByIdAndUpdate(dto.conversationId, {
+      lastMessage: message._id,
+      lastMessageAt: new Date(),
+    });
+
     return message;
   },
 
