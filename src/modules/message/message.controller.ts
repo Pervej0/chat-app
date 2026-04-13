@@ -206,17 +206,13 @@ export const updateMessage = async (
 export const deleteMessage = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const messageId = req.params.messageId as string;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
@@ -227,12 +223,7 @@ export const deleteMessage = async (
     const deleted = await messageService.delete(messageId, userId);
 
     if (!deleted) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Message not found or unauthorized",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Message not found or unauthorized", 404));
       return;
     }
 
@@ -247,29 +238,20 @@ export const deleteMessage = async (
     };
     res.status(200).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to delete message",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to delete message", 500, error));
   }
 };
 
 export const markAsRead = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const conversationId = req.params.conversationId as string;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
@@ -278,12 +260,7 @@ export const markAsRead = async (
       await conversationService.getConversation(conversationId);
 
     if (!conversation) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Conversation not found",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Conversation not found", 404));
       return;
     }
 
@@ -293,12 +270,7 @@ export const markAsRead = async (
     );
 
     if (!isParticipant) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Access denied",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(403).json(response);
+      next(new CustomError("Access denied", 403));
       return;
     }
 
@@ -317,29 +289,20 @@ export const markAsRead = async (
     };
     res.status(200).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to mark messages as read",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to mark messages as read", 500, error));
   }
 };
 
 export const getUnreadCount = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   const userId = req.user?.userId;
   const conversationId = req.params.conversationId as string;
 
   if (!userId) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Unauthorized",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    next(new CustomError("Unauthorized", 401));
     return;
   }
 
@@ -348,12 +311,7 @@ export const getUnreadCount = async (
       await conversationService.getConversation(conversationId);
 
     if (!conversation) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Conversation not found",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(404).json(response);
+      next(new CustomError("Conversation not found", 404));
       return;
     }
 
@@ -363,12 +321,7 @@ export const getUnreadCount = async (
     );
 
     if (!isParticipant) {
-      const response: ApiResponse = {
-        success: false,
-        message: "Access denied",
-        timestamp: new Date().toISOString(),
-      };
-      res.status(403).json(response);
+      next(new CustomError("Access denied", 403));
       return;
     }
 
@@ -381,11 +334,6 @@ export const getUnreadCount = async (
     };
     res.status(200).json(response);
   } catch (error) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Failed to get unread count",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(500).json(response);
+    next(new CustomError("Failed to get unread count", 500, error));
   }
 };
