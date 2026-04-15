@@ -29,12 +29,13 @@ export const messageService = {
   },
 
   async findById(id: string): Promise<IMessage | null> {
-    return Message.findById(id).populate("sender", "name email");
+    const message = await Message.findById(id).populate("sender", "name email");
+    return message ? message.toObject() : null;
   },
 
   async findByConversation(
     conversationId: string,
-    options?: { limit?: number; before?: string; after?: string }
+    options?: { limit?: number; before?: string; after?: string },
   ): Promise<IMessage[]> {
     const query: Record<string, unknown> = {
       conversationId: new Types.ObjectId(conversationId),
@@ -48,16 +49,18 @@ export const messageService = {
       query.createdAt = { $gt: new Date(options.after) };
     }
 
-    return Message.find(query)
+    const messages = await Message.find(query)
       .populate("sender", "name email")
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: 1 })
       .limit(options?.limit || 50);
+
+    return messages.map((m) => m.toObject());
   },
 
   async update(
     id: string,
     dto: UpdateMessageDto,
-    userId: string
+    userId: string,
   ): Promise<IMessage | null> {
     const message = await Message.findOne({
       _id: id,
@@ -86,18 +89,18 @@ export const messageService = {
 
   async markAsRead(
     messageId: string,
-    userId: string
+    userId: string,
   ): Promise<IMessage | null> {
     return Message.findByIdAndUpdate(
       messageId,
       { $addToSet: { readBy: new Types.ObjectId(userId) } },
-      { new: true }
+      { new: true },
     );
   },
 
   async markConversationAsRead(
     conversationId: string,
-    userId: string
+    userId: string,
   ): Promise<{ modifiedCount: number }> {
     const result = await Message.updateMany(
       {
@@ -107,13 +110,16 @@ export const messageService = {
       },
       {
         $addToSet: { readBy: new Types.ObjectId(userId) },
-      }
+      },
     );
 
     return { modifiedCount: result.modifiedCount };
   },
 
-  async getUnreadCount(conversationId: string, userId: string): Promise<number> {
+  async getUnreadCount(
+    conversationId: string,
+    userId: string,
+  ): Promise<number> {
     return Message.countDocuments({
       conversationId: new Types.ObjectId(conversationId),
       readBy: { $ne: new Types.ObjectId(userId) },

@@ -61,12 +61,39 @@ export const createMessage = async (
       userId,
     );
 
-    // Emit to conversation participants
-    emitToConversation(conversationId, "newMessage", message);
+    // Get populated message for response
+    const populatedMessage = await messageService.findById(
+      message._id.toString(),
+    );
+    const senderObj = populatedMessage?.sender as unknown as
+      | { name: string }
+      | undefined;
+    const senderName = senderObj?.name || "";
+
+    // Emit to conversation participants with formatted data
+    emitToConversation(conversationId, "newMessage", {
+      id: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      senderId: message.sender.toString(),
+      senderName,
+      text: message.content,
+      content: message.content,
+      createdAt: message.createdAt,
+      status: "sent",
+    });
 
     const response: ApiResponse = {
       success: true,
-      data: message,
+      data: {
+        id: message._id.toString(),
+        conversationId: message.conversationId.toString(),
+        senderId: message.sender.toString(),
+        senderName,
+        text: message.content,
+        content: message.content,
+        createdAt: message.createdAt,
+        status: "sent",
+      },
       message: "Message sent successfully",
       timestamp: new Date().toISOString(),
     };
@@ -146,6 +173,8 @@ export const getMessages = async (
       before,
       after,
     });
+
+    console.log(messages, "pppp");
 
     const response: ApiResponse = {
       success: true,

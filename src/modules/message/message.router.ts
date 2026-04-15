@@ -17,8 +17,8 @@ router.use(authMiddleware);
 
 // Message routes
 router.post("/", createMessage);
-router.get("/:messageId", getMessage);
 router.get("/conversation/:conversationId", getMessages);
+router.get("/:messageId", getMessage);
 router.put("/:messageId", updateMessage);
 router.delete("/:messageId", deleteMessage);
 

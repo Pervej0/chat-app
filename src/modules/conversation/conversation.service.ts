@@ -26,13 +26,16 @@ export const conversationService = {
   },
 
   async getConversation(conversationId: string): Promise<IConversation | null> {
-    return Conversation.findById(conversationId).populate("participants", "name email");
+    const conversation = await Conversation.findById(conversationId).populate("participants", "name email");
+    return conversation ? conversation.toObject() : null;
   },
 
   async getUserConversations(userId: string): Promise<IConversation[]> {
-    return Conversation.find({ participants: userId })
+    const conversations = await Conversation.find({ participants: userId })
       .populate("participants", "name email")
       .populate("lastMessage")
       .sort({ lastMessageAt: -1, updatedAt: -1 });
+
+    return conversations.map((conv) => conv.toObject());
   },
 };
