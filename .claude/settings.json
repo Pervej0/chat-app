@@ -1,0 +1,58 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"{\\\"additionalContext\\\": \\\"Branch: $(git branch --show-current) | NODE_ENV: ${NODE_ENV:-development}\\\"}\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qE 'rm -rf|DROP TABLE|dropDatabase|truncate' && exit 2 || exit 0"
+          },
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'git commit' && npx jest --no-coverage 2>&1 || exit 0"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -q '\\.ts\"' && npx tsc --noEmit 2>&1 || exit 0"
+          },
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -o 'src/[^\"]*\\.ts'); [ -n \"$FILE\" ] && npx jest --testPathPattern=\"${FILE/src\\//}\" --no-coverage --passWithNoTests 2>&1 || exit 0"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
