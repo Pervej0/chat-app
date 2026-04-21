@@ -30,8 +30,6 @@ export const createConversation = async (
     ? participants
     : [...participants, userId];
 
-  console.log(participants, "xxx");
-
   try {
     const conversation = await conversationService.create(
       { participants: allParticipants },

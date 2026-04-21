@@ -5,9 +5,9 @@ import { Conversation } from "../../../models/Conversation";
 jest.mock("../../../models/Message");
 jest.mock("../../../models/Conversation");
 
-const VALID_MSG_ID = "507f1f77bcf86cd799439013";
-const VALID_CONV_ID = "507f1f77bcf86cd799439011";
-const VALID_USER_ID = "507f1f77bcf86cd799439012";
+const VALID_MSG_ID = "69df274653e556dde4120207";
+const VALID_CONV_ID = "69dca1f6252732585e52c128";
+const VALID_USER_ID = "69d4f40cb96bfa6cbfc64adb"; // user = test 3
 const WRONG_USER_ID = "507f1f77bcf86cd799439099";
 
 const mockMessage = (overrides: Partial<IMessage> = {}): IMessage =>
@@ -199,7 +199,10 @@ describe("messageService", () => {
       const msg = mockMessage();
       (Message.findByIdAndUpdate as jest.Mock).mockResolvedValue(msg);
 
-      const result = await messageService.markAsRead(VALID_MSG_ID, VALID_USER_ID);
+      const result = await messageService.markAsRead(
+        VALID_MSG_ID,
+        VALID_USER_ID,
+      );
 
       expect(Message.findByIdAndUpdate).toHaveBeenCalledWith(
         VALID_MSG_ID,

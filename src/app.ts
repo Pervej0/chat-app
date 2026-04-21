@@ -20,7 +20,7 @@ export const createApp = (): Application => {
   if (config.nodeEnv !== "test") {
     app.use(requestLogger);
   }
-
+  console.log("first");
   // Routes
   app.use("/api/v1", routes);
 
