@@ -57,7 +57,7 @@ const getErrorInfo = (
   }
 
   // Mongoose duplicate key error
-  if (err.code === "11000") {
+  if (err.code === 11000) {
     return {
       statusCode: 409,
       message: handleMongooseDuplicateKeyError(err as any),

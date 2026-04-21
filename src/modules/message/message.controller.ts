@@ -174,8 +174,6 @@ export const getMessages = async (
       after,
     });
 
-    console.log(messages, "pppp");
-
     const response: ApiResponse = {
       success: true,
       data: messages,
