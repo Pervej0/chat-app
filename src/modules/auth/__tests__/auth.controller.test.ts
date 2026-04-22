@@ -230,7 +230,7 @@ describe("authController", () => {
 
   describe("logout", () => {
     it("calls authService.logout when user is authenticated", async () => {
-      mockReq.user = { userId: "507f1f77bcf86cd799439012", email: "test@test.com" };
+      mockReq.user = { userId: "507f1f77bcf86cd799439012", email: "test@test.com", role: "user" };
       (authService.logout as jest.Mock).mockResolvedValue(undefined);
 
       await logout(mockReq as AuthRequest, mockRes as Response);
@@ -247,7 +247,7 @@ describe("authController", () => {
     });
 
     it("returns 200 with success message", async () => {
-      mockReq.user = { userId: "507f1f77bcf86cd799439012", email: "test@test.com" };
+      mockReq.user = { userId: "507f1f77bcf86cd799439012", email: "test@test.com", role: "user" };
       (authService.logout as jest.Mock).mockResolvedValue(undefined);
 
       await logout(mockReq as AuthRequest, mockRes as Response);

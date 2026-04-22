@@ -18,12 +18,14 @@ export interface User {
   id: string;
   email: string;
   passwordHash: string;
+  role: "user" | "admin" | "superadmin";
   createdAt: Date;
 }
 
 export interface TokenPayload {
   userId: string;
   email: string;
+  role: "user" | "admin" | "superadmin";
 }
 
 export interface AuthTokens {

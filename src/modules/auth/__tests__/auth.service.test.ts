@@ -128,7 +128,7 @@ describe("authService", () => {
 
   describe("refreshToken", () => {
     it("throws INVALID_TOKEN when auth record not found", async () => {
-      (verifyRefreshToken as jest.Mock).mockReturnValue({ userId: VALID_USER_ID, email: "test@test.com" } as TokenPayload);
+      (verifyRefreshToken as jest.Mock).mockReturnValue({ userId: VALID_USER_ID, email: "test@test.com", role: "user" } as TokenPayload);
       (Auth.findOne as jest.Mock).mockReturnValue({
         populate: jest.fn().mockResolvedValue(null),
       });
@@ -139,7 +139,7 @@ describe("authService", () => {
     it("returns user and new tokens on valid refresh token", async () => {
       const user = mockUser();
       const auth = mockAuth({ user: user as any });
-      (verifyRefreshToken as jest.Mock).mockReturnValue({ userId: VALID_USER_ID, email: user.email } as TokenPayload);
+      (verifyRefreshToken as jest.Mock).mockReturnValue({ userId: VALID_USER_ID, email: user.email, role: user.role } as TokenPayload);
       (Auth.findOne as jest.Mock).mockReturnValue({
         populate: jest.fn().mockResolvedValue(auth),
       });
@@ -221,7 +221,7 @@ describe("authService", () => {
   describe("verifyAccessToken", () => {
     it("delegates to utils function", () => {
       const token = "some-token";
-      const payload: TokenPayload = { userId: VALID_USER_ID, email: "test@test.com" };
+      const payload: TokenPayload = { userId: VALID_USER_ID, email: "test@test.com", role: "user" };
       (verifyAccessToken as jest.Mock).mockReturnValue(payload);
 
       const result = authService.verifyAccessToken(token);
@@ -234,7 +234,7 @@ describe("authService", () => {
   describe("verifyRefreshToken", () => {
     it("delegates to utils function", () => {
       const token = "some-refresh-token";
-      const payload: TokenPayload = { userId: VALID_USER_ID, email: "test@test.com" };
+      const payload: TokenPayload = { userId: VALID_USER_ID, email: "test@test.com", role: "user" };
       (verifyRefreshToken as jest.Mock).mockReturnValue(payload);
 
       const result = authService.verifyRefreshToken(token);

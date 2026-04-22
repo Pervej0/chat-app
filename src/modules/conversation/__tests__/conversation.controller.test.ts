@@ -43,7 +43,7 @@ describe("conversationController", () => {
   beforeEach(() => {
     mockJson = jest.fn();
     mockStatus = jest.fn().mockReturnValue({ json: mockJson });
-    mockReq = { user: { userId: VALID_USER_ID, email: "test@test.com" }, body: {}, params: {} };
+    mockReq = { user: { userId: VALID_USER_ID, email: "test@test.com", role: "user" }, body: {}, params: {} };
     mockRes = { status: mockStatus, json: mockJson } as Partial<Response>;
     mockNext = jest.fn();
     jest.clearAllMocks();

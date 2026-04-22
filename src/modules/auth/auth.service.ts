@@ -48,6 +48,7 @@ export const authService = {
       id: user.id,
       email: user.email,
       passwordHash: user.password,
+      role: user.role,
       createdAt: user.createdAt,
     } as any);
 
@@ -70,6 +71,7 @@ export const authService = {
       id: user.id,
       email: user.email,
       passwordHash: user.password,
+      role: user.role,
       createdAt: user.createdAt,
     } as any);
 
@@ -112,6 +114,7 @@ export const authService = {
       id: user.id,
       email: user.email,
       passwordHash: user.password,
+      role: user.role,
       createdAt: user.createdAt,
     } as any);
 

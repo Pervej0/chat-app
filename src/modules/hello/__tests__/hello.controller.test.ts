@@ -12,7 +12,7 @@ const VALID_ID = "507f1f77bcf86cd799439013";
 const VALID_USER_ID = "507f1f77bcf86cd799439012";
 
 const mockReq = (overrides: Record<string, any> = {}): any => ({
-  user: { userId: VALID_USER_ID, email: "test@example.com" },
+  user: { userId: VALID_USER_ID, email: "test@example.com", role: "user" },
   body: {},
   params: {},
   ...overrides,

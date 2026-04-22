@@ -47,4 +47,11 @@ export const userService = {
   async getProfile(id: string): Promise<IUser | null> {
     return User.findById(id).select("-password");
   },
+
+  async getUsers(role: string = "user"): Promise<IUser[]> {
+    if (role == "admin") {
+      return User.find().select("-password");
+    }
+    return User.find({ role: "user" }).select("-password");
+  },
 };

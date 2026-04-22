@@ -115,6 +115,7 @@ describe("authMiddleware", () => {
       const payload: TokenPayload = {
         userId: VALID_USER_ID,
         email: "test@example.com",
+        role: "user",
       };
       mockReq.headers = { authorization: "Bearer validtoken" };
       (authService.verifyAccessToken as jest.Mock).mockReturnValue(payload);

@@ -18,7 +18,7 @@ jest.mock("../../../socket", () => ({
 }));
 
 const mockReq = (overrides: Record<string, any> = {}): any => ({
-  user: { userId: "user123", email: "test@example.com" },
+  user: { userId: "user123", email: "test2@example.com", role: "user" },
   body: {},
   params: {},
   query: {},

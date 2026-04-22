@@ -7,7 +7,10 @@ interface UpdateBody {
   email?: string;
 }
 
-export const getProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getProfile = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const userId = req.user?.userId;
 
   if (!userId) {
@@ -40,7 +43,37 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
   res.status(200).json(response);
 };
 
-export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getUsers = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  const userId = req.user?.userId;
+  const role = req.user?.role;
+
+  if (!userId) {
+    const response: ApiResponse = {
+      success: false,
+      message: "Unauthorized",
+      timestamp: new Date().toISOString(),
+    };
+    res.status(401).json(response);
+    return;
+  }
+
+  const users = await userService.getUsers(role);
+
+  const response: ApiResponse = {
+    success: true,
+    data: users,
+    timestamp: new Date().toISOString(),
+  };
+  res.status(200).json(response);
+};
+
+export const updateProfile = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const userId = req.user?.userId;
   const { name, email } = req.body as UpdateBody;
 
@@ -99,7 +132,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
   res.status(200).json(response);
 };
 
-export const deleteProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteProfile = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const userId = req.user?.userId;
 
   if (!userId) {

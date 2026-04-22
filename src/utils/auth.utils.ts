@@ -25,7 +25,7 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 }
 
 export function generateTokens(user: User): AuthTokens {
-  const payload: TokenPayload = { userId: user.id, email: user.email };
+  const payload: TokenPayload = { userId: user.id, email: user.email, role: user.role };
 
   const accessToken = jwt.sign(payload, config.jwt.secret as string, {
     expiresIn: config.jwt.accessExpiry as SignOptions["expiresIn"],
