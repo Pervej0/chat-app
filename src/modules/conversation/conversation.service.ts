@@ -6,7 +6,10 @@ export interface CreateConversationDto {
 }
 
 export const conversationService = {
-  async create(dto: CreateConversationDto, senderId: string): Promise<IConversation> {
+  async create(
+    dto: CreateConversationDto,
+    senderId: string,
+  ): Promise<IConversation> {
     const participantIds = dto.participants.map((id) => new Types.ObjectId(id));
 
     // Check if conversation already exists between these participants
@@ -26,7 +29,10 @@ export const conversationService = {
   },
 
   async getConversation(conversationId: string): Promise<IConversation | null> {
-    const conversation = await Conversation.findById(conversationId).populate("participants", "name email");
+    const conversation = await Conversation.findById(conversationId).populate(
+      "participants",
+      "name email",
+    );
     return conversation ? conversation.toObject() : null;
   },
 
