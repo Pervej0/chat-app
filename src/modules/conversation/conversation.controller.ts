@@ -14,7 +14,7 @@ export const createConversation = async (
 ): Promise<void> => {
   const userId = req.user?.userId;
   const { participants } = req.body as CreateConversationBody;
-  console.log(userId, participants, "ppppppppppp");
+
   if (!userId) {
     next(new CustomError("Unauthorized", 401));
     return;

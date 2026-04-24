@@ -6,6 +6,10 @@
           {
             "type": "command",
             "command": "echo \"{\\\"additionalContext\\\": \\\"Branch: $(git branch --show-current) | NODE_ENV: ${NODE_ENV:-development}\\\"}\""
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/log_tokens.sh"
           }
         ]
       }

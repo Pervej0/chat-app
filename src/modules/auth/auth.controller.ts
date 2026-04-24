@@ -26,7 +26,10 @@ interface ResetPasswordBody {
   password: string;
 }
 
-export const register = async (req: AuthRequest, res: Response): Promise<void> => {
+export const register = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const { email, password, name } = req.body as RegisterBody;
 
   if (!email || !password || !name) {
@@ -50,12 +53,21 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
   }
 
   try {
-    const { user, tokens } = await authService.register({ email, password, name });
+    const { user, tokens } = await authService.register({
+      email,
+      password,
+      name,
+    });
 
     const response: ApiResponse = {
       success: true,
       data: {
-        user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt,
+        },
         ...tokens,
       },
       message: "Registration successful",
@@ -65,7 +77,10 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
   } catch (error: any) {
     const response: ApiResponse = {
       success: false,
-      message: error.message === "EMAIL_EXISTS" ? "Email already registered" : "Registration failed",
+      message:
+        error.message === "EMAIL_EXISTS"
+          ? "Email already registered"
+          : "Registration failed",
       timestamp: new Date().toISOString(),
     };
     res.status(409).json(response);
@@ -88,15 +103,29 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { user, tokens } = await authService.login({ email, password });
 
+    // ✅ Set refresh token in cookie
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true, // prevent JS access (security)
+      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+      sameSite: "strict", // CSRF protection
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     const response: ApiResponse = {
       success: true,
       data: {
-        user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
-        ...tokens,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt,
+        },
+        accessToken: tokens.accessToken, // ✅ send only access token in body
       },
       message: "Login successful",
       timestamp: new Date().toISOString(),
     };
+
     res.status(200).json(response);
   } catch (error: any) {
     const response: ApiResponse = {
@@ -108,7 +137,10 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   }
 };
 
-export const refresh = async (req: AuthRequest, res: Response): Promise<void> => {
+export const refresh = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const { refreshToken } = req.body as RefreshBody;
 
   if (!refreshToken) {
@@ -127,7 +159,12 @@ export const refresh = async (req: AuthRequest, res: Response): Promise<void> =>
     const response: ApiResponse = {
       success: true,
       data: {
-        user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          createdAt: user.createdAt,
+        },
         ...tokens,
       },
       message: "Token refreshed successfully",
@@ -144,7 +181,10 @@ export const refresh = async (req: AuthRequest, res: Response): Promise<void> =>
   }
 };
 
-export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+export const logout = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const userId = req.user?.userId;
 
   if (userId) {
@@ -159,7 +199,10 @@ export const logout = async (req: AuthRequest, res: Response): Promise<void> => 
   res.status(200).json(response);
 };
 
-export const forgotPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+export const forgotPassword = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const { email } = req.body as ForgotPasswordBody;
 
   if (!email) {
@@ -183,7 +226,10 @@ export const forgotPassword = async (req: AuthRequest, res: Response): Promise<v
   res.status(200).json(response);
 };
 
-export const resetPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+export const resetPassword = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
   const { token, password } = req.body as ResetPasswordBody;
 
   if (!token || !password) {
