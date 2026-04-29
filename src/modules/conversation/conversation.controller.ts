@@ -20,8 +20,8 @@ export const createConversation = async (
     return;
   }
 
-  if (!participants || participants.length > 1) {
-    next(new CustomError("Only one participant is allowed", 400));
+  if (!participants) {
+    next(new CustomError("Minimum one participant need to add", 400));
     return;
   }
   // Add current user to participants if not already included
