@@ -1,77 +1,58 @@
-import { Response, NextFunction } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../../types";
 import { WorkspaceService } from "./workspace.service";
+import { asyncHandler } from "../../middleware/errorHandler";
+import { BadRequestError, NotFoundError, UnauthorizedError } from "../../utils/errors";
 
 const workspaceService = new WorkspaceService();
 
 export class WorkspaceController {
-  async createWorkspace(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { name, slug } = req.body;
-      const ownerId = req.user?.userId; // Assuming auth middleware sets req.user
+  createWorkspace = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const { name, slug } = req.body;
+    const ownerId = req.user?.userId;
 
-      if (!ownerId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-      }
-
-      if (!name || !slug) {
-        res.status(400).json({ message: "Name and slug are required" });
-        return;
-      }
-
-      const workspace = await workspaceService.createWorkspace(name, slug, ownerId);
-      res.status(201).json({ success: true, data: workspace });
-    } catch (error) {
-      next(error);
+    if (!ownerId) {
+      throw new UnauthorizedError();
     }
-  }
 
-  async getUserWorkspaces(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = req.user?.userId;
-      if (!userId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-      }
-
-      const workspaces = await workspaceService.getWorkspacesForUser(userId);
-      res.status(200).json({ success: true, data: workspaces });
-    } catch (error) {
-      next(error);
+    if (!name || !slug) {
+      throw new BadRequestError("Name and slug are required");
     }
-  }
 
-  async getWorkspaceDetails(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const id = req.params.id as string;
-      const workspace = await workspaceService.getWorkspaceById(id);
-      
-      if (!workspace) {
-        res.status(404).json({ message: "Workspace not found" });
-        return;
-      }
+    const workspace = await workspaceService.createWorkspace(name, slug, ownerId);
+    res.status(201).json({ success: true, data: workspace });
+  });
 
-      res.status(200).json({ success: true, data: workspace });
-    } catch (error) {
-      next(error);
+  getUserWorkspaces = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
     }
-  }
 
-  async addMember(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const id = req.params.id as string;
-      const { userId, role } = req.body;
+    const workspaces = await workspaceService.getWorkspacesForUser(userId);
+    res.status(200).json({ success: true, data: workspaces });
+  });
 
-      if (!userId) {
-        res.status(400).json({ message: "User ID is required" });
-        return;
-      }
-
-      const workspace = await workspaceService.addMember(id, userId, role);
-      res.status(200).json({ success: true, data: workspace });
-    } catch (error) {
-      next(error);
+  getWorkspaceDetails = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const id = req.params.id as string;
+    const workspace = await workspaceService.getWorkspaceById(id);
+    
+    if (!workspace) {
+      throw new NotFoundError("Workspace not found");
     }
-  }
+
+    res.status(200).json({ success: true, data: workspace });
+  });
+
+  addMember = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const id = req.params.id as string;
+    const { userId, role } = req.body;
+
+    if (!userId) {
+      throw new BadRequestError("User ID is required");
+    }
+
+    const workspace = await workspaceService.addMember(id, userId, role);
+    res.status(200).json({ success: true, data: workspace });
+  });
 }

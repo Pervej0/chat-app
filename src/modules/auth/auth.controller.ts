@@ -1,56 +1,12 @@
 import { Response } from "express";
 import { authService } from "./auth.service";
 import { AuthRequest, ApiResponse } from "../../types";
+import { asyncHandler } from "../../middleware/errorHandler";
+import { RegisterInput, LoginInput } from "../../schemas/auth.schema";
+import { ConflictError, UnauthorizedError, BadRequestError } from "../../utils/errors";
 
-interface RegisterBody {
-  email: string;
-  password: string;
-  name: string;
-}
-
-interface LoginBody {
-  email: string;
-  password: string;
-}
-
-interface RefreshBody {
-  refreshToken: string;
-}
-
-interface ForgotPasswordBody {
-  email: string;
-}
-
-interface ResetPasswordBody {
-  token: string;
-  password: string;
-}
-
-export const register = async (
-  req: AuthRequest,
-  res: Response,
-): Promise<void> => {
-  const { email, password, name } = req.body as RegisterBody;
-
-  if (!email || !password || !name) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Email, password, and name are required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
-  }
-
-  if (password.length < 6) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Password must be at least 6 characters",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
-  }
+export const register = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { email, password, name } = req.body as RegisterInput;
 
   try {
     const { user, tokens } = await authService.register({
@@ -75,40 +31,24 @@ export const register = async (
     };
     res.status(201).json(response);
   } catch (error: any) {
-    const response: ApiResponse = {
-      success: false,
-      message:
-        error.message === "EMAIL_EXISTS"
-          ? "Email already registered"
-          : "Registration failed",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(409).json(response);
+    if (error.message === "EMAIL_EXISTS") {
+      throw new ConflictError("Email already registered");
+    }
+    throw error;
   }
-};
+});
 
-export const login = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, password } = req.body as LoginBody;
-
-  if (!email || !password) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Email and password are required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
-  }
+export const login = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { email, password } = req.body as LoginInput;
 
   try {
     const { user, tokens } = await authService.login({ email, password });
 
-    // ✅ Set refresh token in cookie
     res.cookie("refreshToken", tokens.refreshToken, {
-      httpOnly: true, // prevent JS access (security)
-      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
-      sameSite: "strict", // CSRF protection
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     const response: ApiResponse = {
@@ -120,7 +60,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
           name: user.name,
           createdAt: user.createdAt,
         },
-        accessToken: tokens.accessToken, // ✅ send only access token in body
+        accessToken: tokens.accessToken,
       },
       message: "Login successful",
       timestamp: new Date().toISOString(),
@@ -128,29 +68,15 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
 
     res.status(200).json(response);
   } catch (error: any) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Invalid email or password",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    throw new UnauthorizedError("Invalid email or password");
   }
-};
+});
 
-export const refresh = async (
-  req: AuthRequest,
-  res: Response,
-): Promise<void> => {
-  const { refreshToken } = req.body as RefreshBody;
+export const refresh = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { refreshToken } = req.body;
 
   if (!refreshToken) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Refresh token is required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
+    throw new BadRequestError("Refresh token is required");
   }
 
   try {
@@ -172,19 +98,11 @@ export const refresh = async (
     };
     res.status(200).json(response);
   } catch (error: any) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Invalid or expired refresh token",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(401).json(response);
+    throw new UnauthorizedError("Invalid or expired refresh token");
   }
-};
+});
 
-export const logout = async (
-  req: AuthRequest,
-  res: Response,
-): Promise<void> => {
+export const logout = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.userId;
 
   if (userId) {
@@ -197,59 +115,34 @@ export const logout = async (
     timestamp: new Date().toISOString(),
   };
   res.status(200).json(response);
-};
+});
 
-export const forgotPassword = async (
-  req: AuthRequest,
-  res: Response,
-): Promise<void> => {
-  const { email } = req.body as ForgotPasswordBody;
+export const forgotPassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { email } = req.body;
 
   if (!email) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Email is required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
+    throw new BadRequestError("Email is required");
   }
 
   await authService.forgotPassword({ email });
 
-  // Always return success to not reveal if email exists
   const response: ApiResponse = {
     success: true,
     message: "If the email exists, a password reset link has been sent",
     timestamp: new Date().toISOString(),
   };
   res.status(200).json(response);
-};
+});
 
-export const resetPassword = async (
-  req: AuthRequest,
-  res: Response,
-): Promise<void> => {
-  const { token, password } = req.body as ResetPasswordBody;
+export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+  const { token, password } = req.body;
 
   if (!token || !password) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Token and new password are required",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
+    throw new BadRequestError("Token and new password are required");
   }
 
   if (password.length < 6) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Password must be at least 6 characters",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
-    return;
+    throw new BadRequestError("Password must be at least 6 characters");
   }
 
   try {
@@ -262,11 +155,6 @@ export const resetPassword = async (
     };
     res.status(200).json(response);
   } catch (error: any) {
-    const response: ApiResponse = {
-      success: false,
-      message: "Invalid or expired reset token",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(400).json(response);
+    throw new BadRequestError("Invalid or expired reset token");
   }
-};
+});

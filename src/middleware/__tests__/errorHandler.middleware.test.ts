@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
+import { ZodError } from "zod";
 import {
   errorHandler,
   CustomError,
@@ -27,12 +28,7 @@ describe("errorHandler", () => {
     it("uses the error's statusCode and message", () => {
       const error = new CustomError("Not Found", 404);
 
-      errorHandler(
-        error,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockStatus).toHaveBeenCalledWith(404);
       expect(mockJson).toHaveBeenCalledWith(
@@ -100,12 +96,7 @@ describe("errorHandler", () => {
       dupError.code = 11000;
       (dupError as any).keyPattern = { email: 1 };
 
-      errorHandler(
-        dupError,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(dupError, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockStatus).toHaveBeenCalledWith(409);
       expect(mockJson).toHaveBeenCalledWith(
@@ -120,12 +111,7 @@ describe("errorHandler", () => {
       const dupError = new Error() as AppError;
       dupError.code = 11000;
 
-      errorHandler(
-        dupError,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(dupError, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockStatus).toHaveBeenCalledWith(409);
       expect(mockJson).toHaveBeenCalledWith(
@@ -142,12 +128,7 @@ describe("errorHandler", () => {
       const jwtError = new Error("invalid signature");
       jwtError.name = "JsonWebTokenError";
 
-      errorHandler(
-        jwtError,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(jwtError, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockStatus).toHaveBeenCalledWith(401);
       expect(mockJson).toHaveBeenCalledWith(
@@ -181,6 +162,28 @@ describe("errorHandler", () => {
     });
   });
 
+  describe("ZodError", () => {
+    it("returns 400 with validation failure message", () => {
+      const zodError = new ZodError([
+        {
+          code: "invalid_type",
+          path: ["body", "email"],
+          message: "Required",
+        },
+      ] as any);
+
+      errorHandler(zodError, mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockStatus).toHaveBeenCalledWith(400);
+      expect(mockJson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: "Validation failed: body.email Required",
+        }),
+      );
+    });
+  });
+
   describe("SyntaxError (JSON parse error)", () => {
     it("returns 400 with invalid JSON message", () => {
       const syntaxError = new SyntaxError("Unexpected token");
@@ -208,12 +211,7 @@ describe("errorHandler", () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = "development";
 
-      errorHandler(
-        error,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockStatus).toHaveBeenCalledWith(500);
       expect(mockJson).toHaveBeenCalledWith(
@@ -231,12 +229,7 @@ describe("errorHandler", () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = "production";
 
-      errorHandler(
-        error,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       expect(mockStatus).toHaveBeenCalledWith(500);
       expect(mockJson).toHaveBeenCalledWith(
@@ -256,12 +249,7 @@ describe("errorHandler", () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = "development";
 
-      errorHandler(
-        error,
-        mockReq as Request,
-        mockRes as Response,
-        mockNext,
-      );
+      errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
       const response = mockJson.mock.calls[0][0];
       expect(response.stack).toBeDefined();

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
+import { ZodError } from "zod";
 import { ApiResponse } from "../types";
 
 export interface AppError extends Error {
@@ -39,13 +40,29 @@ const handleMongooseCastError = (err: mongoose.Error.CastError): string => {
   return `Invalid ${err.path}: ${err.value}`;
 };
 
+const handleZodError = (err: ZodError): string => {
+  const errors = err.issues.map((issue: any) => {
+    const path = issue.path.length ? issue.path.join(".") : "input";
+    return `${path} ${issue.message}`;
+  });
+  return `Validation failed: ${errors.join(", ")}`;
+};
+
 // Determine error type and get message
-const getErrorInfo = (
-  err: AppError,
-): { statusCode: number; message: string } => {
+const getErrorInfo = (err: any): { statusCode: number; message: string } => {
+  const appError = err as AppError;
+
   // Custom app errors
-  if (err instanceof CustomError) {
-    return { statusCode: err.statusCode, message: err.message };
+  if (appError instanceof CustomError) {
+    return { statusCode: appError.statusCode, message: appError.message };
+  }
+
+  // Zod validation error
+  if (err instanceof ZodError) {
+    return {
+      statusCode: 400,
+      message: handleZodError(err),
+    };
   }
 
   // Mongoose validation error
@@ -99,13 +116,13 @@ const getErrorInfo = (
   // Don't expose internal error messages in production
   const isProduction = process.env.NODE_ENV === "production";
   return {
-    statusCode: err.statusCode || 500,
-    message: isProduction ? "Internal Server Error" : err.message,
+    statusCode: appError.statusCode || 500,
+    message: isProduction ? "Internal Server Error" : appError.message,
   };
 };
 
 export const errorHandler = (
-  err: AppError,
+  err: any,
   req: Request,
   res: Response,
   _next: NextFunction,
@@ -123,14 +140,17 @@ export const errorHandler = (
     (response as any).stack = err.stack;
   }
 
+  // Console log the real error for debugging
+  console.error(`[Global Error] ${req.method} ${req.url}:`, err);
+
   res.status(statusCode).json(response);
 };
 
 // Async wrapper to catch errors in route handlers
-export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>,
+export const asyncHandler = <T extends Request = Request>(
+  fn: (req: T, res: Response, next: NextFunction) => Promise<void>,
 ) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    Promise.resolve(fn(req as T, res, next)).catch(next);
   };
 };
