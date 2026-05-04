@@ -1,9 +1,10 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
 export interface IMessage extends Document {
-  conversationId: Types.ObjectId;
+  channelId: Types.ObjectId;
   sender: Types.ObjectId;
   content: string;
+  parentMessageId?: Types.ObjectId;
   readBy: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -11,9 +12,9 @@ export interface IMessage extends Document {
 
 const messageSchema = new Schema<IMessage>(
   {
-    conversationId: {
+    channelId: {
       type: Schema.Types.ObjectId,
-      ref: "Conversation",
+      ref: "Channel",
       required: true,
     },
     sender: {
@@ -26,6 +27,10 @@ const messageSchema = new Schema<IMessage>(
       required: true,
       trim: true,
     },
+    parentMessageId: {
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
     readBy: {
       type: [Schema.Types.ObjectId],
       ref: "User",
@@ -37,6 +42,7 @@ const messageSchema = new Schema<IMessage>(
   }
 );
 
-messageSchema.index({ conversationId: 1, createdAt: -1 });
+messageSchema.index({ channelId: 1, createdAt: -1 });
+messageSchema.index({ parentMessageId: 1 });
 
 export const Message = mongoose.model<IMessage>("Message", messageSchema);

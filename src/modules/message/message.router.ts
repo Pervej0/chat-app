@@ -1,12 +1,7 @@
 import { Router } from "express";
 import {
   createMessage,
-  getMessage,
   getMessages,
-  updateMessage,
-  deleteMessage,
-  markAsRead,
-  getUnreadCount,
 } from "./message.controller";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -17,13 +12,6 @@ router.use(authMiddleware);
 
 // Message routes
 router.post("/", createMessage);
-router.get("/conversation/:conversationId", getMessages);
-router.get("/:messageId", getMessage);
-router.put("/:messageId", updateMessage);
-router.delete("/:messageId", deleteMessage);
-
-// Read status routes
-router.put("/conversation/:conversationId/read", markAsRead);
-router.get("/conversation/:conversationId/unread", getUnreadCount);
+router.get("/channel/:channelId", getMessages);
 
 export default router;

@@ -1,4 +1,6 @@
-export { User, IUser } from "./User";
-export { Auth, IAuth } from "./Auth";
-export { Conversation, IConversation } from "./Conversation";
-export { Message, IMessage } from "./Message";
+export * from "./User";
+export * from "./Auth";
+export * from "./Channel";
+export * from "./Message";
+export * from "./Workspace";
+export * from "./Task";

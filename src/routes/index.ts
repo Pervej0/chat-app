@@ -1,14 +1,18 @@
 import { Router } from "express";
 import authRouter from "../modules/auth/auth.router";
 import userRouter from "../modules/user/user.router";
-import conversationRouter from "../modules/conversation/conversation.router";
+import workspaceRouter from "../modules/workspace/workspace.router";
+import channelRouter from "../modules/channel/channel.router";
+import taskRouter from "../modules/task/task.router";
 import messageRouter from "../modules/message/message.router";
 
 const router = Router();
 const allRoutes = [
   { path: "/auth", route: authRouter },
   { path: "/users", route: userRouter },
-  { path: "/conversations", route: conversationRouter },
+  { path: "/workspaces", route: workspaceRouter },
+  { path: "/channels", route: channelRouter },
+  { path: "/tasks", route: taskRouter },
   { path: "/messages", route: messageRouter },
 ];
 

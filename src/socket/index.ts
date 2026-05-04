@@ -25,22 +25,28 @@ export const initializeSocket = (server: Server): void => {
       console.log(`User ${userId} authenticated`);
     });
 
-    // Handle joining a conversation room
-    socket.on("joinConversation", (conversationId: string) => {
-      socket.join(`conversation:${conversationId}`);
-      console.log(`Socket ${socket.id} joined conversation ${conversationId}`);
+    // Handle joining a workspace room
+    socket.on("joinWorkspace", (workspaceId: string) => {
+      socket.join(`workspace:${workspaceId}`);
+      console.log(`Socket ${socket.id} joined workspace ${workspaceId}`);
     });
 
-    // Handle leaving a conversation room
-    socket.on("leaveConversation", (conversationId: string) => {
-      socket.leave(`conversation:${conversationId}`);
-      console.log(`Socket ${socket.id} left conversation ${conversationId}`);
+    // Handle joining a channel room
+    socket.on("joinChannel", (channelId: string) => {
+      socket.join(`channel:${channelId}`);
+      console.log(`Socket ${socket.id} joined channel ${channelId}`);
+    });
+
+    // Handle leaving a channel room
+    socket.on("leaveChannel", (channelId: string) => {
+      socket.leave(`channel:${channelId}`);
+      console.log(`Socket ${socket.id} left channel ${channelId}`);
     });
 
     // Handle sending a message
     socket.on(
       "sendMessage",
-      async (data: { conversationId: string; text: string }) => {
+      async (data: { channelId: string; text: string; parentMessageId?: string }) => {
         const userId = socket.data.userId;
         if (!userId) {
           console.error("Cannot send message: user not authenticated");
@@ -49,7 +55,7 @@ export const initializeSocket = (server: Server): void => {
 
         try {
           const message = await messageService.create(
-            { conversationId: data.conversationId, content: data.text },
+            { channelId: data.channelId, content: data.text, parentMessageId: data.parentMessageId },
             userId,
           );
 
@@ -64,14 +70,15 @@ export const initializeSocket = (server: Server): void => {
             | undefined;
           const senderName = senderObj?.name || "";
 
-          // Broadcast to all participants in the conversation including sender
-          emitToConversation(data.conversationId, "newMessage", {
+          // Broadcast to all participants in the channel including sender
+          emitToChannel(data.channelId, "newMessage", {
             id: message._id.toString(),
-            conversationId: message.conversationId.toString(),
+            channelId: message.channelId.toString(),
             senderId: message.sender.toString(),
             senderName,
             text: message.content,
             content: message.content,
+            parentMessageId: message.parentMessageId?.toString(),
             createdAt: message.createdAt,
             status: "sent",
           });
@@ -84,9 +91,9 @@ export const initializeSocket = (server: Server): void => {
     // Handle typing indicator
     socket.on(
       "typing",
-      (data: { conversationId: string; userId: string; userName: string }) => {
+      (data: { channelId: string; userId: string; userName: string }) => {
         socket
-          .to(`conversation:${data.conversationId}`)
+          .to(`channel:${data.channelId}`)
           .emit("userTyping", data);
       },
     );
@@ -94,9 +101,9 @@ export const initializeSocket = (server: Server): void => {
     // Handle stop typing
     socket.on(
       "stopTyping",
-      (data: { conversationId: string; userId: string }) => {
+      (data: { channelId: string; userId: string }) => {
         socket
-          .to(`conversation:${data.conversationId}`)
+          .to(`channel:${data.channelId}`)
           .emit("userStoppedTyping", data);
       },
     );
@@ -104,9 +111,9 @@ export const initializeSocket = (server: Server): void => {
     // Handle message read acknowledgment
     socket.on(
       "messageRead",
-      (data: { conversationId: string; messageId: string; userId: string }) => {
+      (data: { channelId: string; messageId: string; userId: string }) => {
         socket
-          .to(`conversation:${data.conversationId}`)
+          .to(`channel:${data.channelId}`)
           .emit("messageRead", data);
       },
     );
@@ -128,12 +135,20 @@ export const getIO = (): Server | null => io;
 
 export const getConnectedUsers = (): Map<string, SocketUser> => connectedUsers;
 
-export const emitToConversation = (
-  conversationId: string,
+export const emitToChannel = (
+  channelId: string,
   event: string,
   data: unknown,
 ): void => {
-  io?.to(`conversation:${conversationId}`).emit(event, data);
+  io?.to(`channel:${channelId}`).emit(event, data);
+};
+
+export const emitToWorkspace = (
+  workspaceId: string,
+  event: string,
+  data: unknown,
+): void => {
+  io?.to(`workspace:${workspaceId}`).emit(event, data);
 };
 
 export const emitToUser = (
