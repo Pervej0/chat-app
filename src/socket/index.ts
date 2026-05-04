@@ -17,12 +17,16 @@ export const initializeSocket = (server: Server): void => {
   io.on("connection", (socket: Socket) => {
     console.log("Client connected:", socket.id);
 
+    socket.onAny((event, ...args) => {
+      console.log("🔥 EVENT RECEIVED:", event, args);
+    });
+
     // Handle user authentication
     socket.on("authenticate", (userId: string) => {
       socket.data.userId = userId; // Store on socket for later use
       connectedUsers.set(userId, { userId, socketId: socket.id });
       socket.join(`user:${userId}`);
-      console.log(`User ${userId} authenticated`);
+      console.log(`User ${userId} authenticated`, socket.data.userId);
     });
 
     // Handle joining a workspace room
@@ -46,8 +50,9 @@ export const initializeSocket = (server: Server): void => {
     // Handle sending a message
     socket.on(
       "sendMessage",
-      async (data: { channelId: string; text: string; parentMessageId?: string }) => {
+      async (data: { channelId: string; content: string; parentMessageId?: string }) => {
         const userId = socket.data.userId;
+        console.log("User ID::::::", userId);
         if (!userId) {
           console.error("Cannot send message: user not authenticated");
           return;
@@ -55,7 +60,7 @@ export const initializeSocket = (server: Server): void => {
 
         try {
           const message = await messageService.create(
-            { channelId: data.channelId, content: data.text, parentMessageId: data.parentMessageId },
+            { channelId: data.channelId, content: data.content, parentMessageId: data.parentMessageId },
             userId,
           );
 
@@ -128,7 +133,10 @@ export const initializeSocket = (server: Server): void => {
         }
       }
     });
+
   });
+
+  
 };
 
 export const getIO = (): Server | null => io;

@@ -24,6 +24,8 @@ export const createMessage = asyncHandler(async (
   res: Response,
 ): Promise<void> => {
   const userId = req.user?.userId;
+      console.log("DTO:::", req.body);
+
   const { channelId, content, parentMessageId } = req.body as CreateMessageBody;
 
   if (!userId) {

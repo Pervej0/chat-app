@@ -44,17 +44,16 @@ const channelSchema = new Schema<IChannel>(
 );
 
 // Validate DMs have exactly 2 members or that channel name exists for public/private
-channelSchema.pre("validate", function (next: any) {
+channelSchema.pre("validate", async function () {
   if (this.type === "direct") {
     if (this.members.length !== 2) {
-      return next(new Error("Direct messages must have exactly 2 members."));
+      throw new Error("Direct messages must have exactly 2 members.");
     }
   } else {
     if (!this.name || this.name.trim() === "") {
-      return next(new Error("Public or private channels must have a name."));
+      throw new Error("Public or private channels must have a name.");
     }
   }
-  next();
 });
 
 channelSchema.index({ workspaceId: 1 });

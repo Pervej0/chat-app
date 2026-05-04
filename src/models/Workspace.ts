@@ -56,7 +56,7 @@ const workspaceSchema = new Schema<IWorkspace>(
   }
 );
 
-workspaceSchema.index({ slug: 1 });
+// workspaceSchema.index({ slug: 1 });
 workspaceSchema.index({ "members.userId": 1 });
 
 export const Workspace = mongoose.model<IWorkspace>("Workspace", workspaceSchema);
