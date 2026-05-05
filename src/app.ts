@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { config } from "./core";
 import routes from "./routes";
 import { requestLogger, errorHandler } from "./middleware";
+import cookieParser from "cookie-parser";
 
 export const createApp = (): Application => {
   const app = express();
@@ -34,6 +35,7 @@ export const createApp = (): Application => {
 
   // Body parsing
   app.use(express.json());
+  app.use(cookieParser());
   app.use(express.urlencoded({ extended: true }));
 
   // Logging

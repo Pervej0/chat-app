@@ -1,160 +1,185 @@
-import { Response } from "express";
 import { authService } from "./auth.service";
 import { AuthRequest, ApiResponse } from "../../types";
 import { asyncHandler } from "../../middleware/errorHandler";
 import { RegisterInput, LoginInput } from "../../schemas/auth.schema";
-import { ConflictError, UnauthorizedError, BadRequestError } from "../../utils/errors";
+import { Request, Response } from "express";
+import {
+  ConflictError,
+  UnauthorizedError,
+  BadRequestError,
+} from "../../utils/errors";
 
-export const register = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, password, name } = req.body as RegisterInput;
+export const register = asyncHandler(
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const { email, password, name } = req.body as RegisterInput;
 
-  try {
-    const { user, tokens } = await authService.register({
-      email,
-      password,
-      name,
-    });
+    try {
+      const { user, tokens } = await authService.register({
+        email,
+        password,
+        name,
+      });
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          createdAt: user.createdAt,
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            createdAt: user.createdAt,
+          },
+          ...tokens,
         },
-        ...tokens,
-      },
-      message: "Registration successful",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(201).json(response);
-  } catch (error: any) {
-    if (error.message === "EMAIL_EXISTS") {
-      throw new ConflictError("Email already registered");
+        message: "Registration successful",
+        timestamp: new Date().toISOString(),
+      };
+      res.status(201).json(response);
+    } catch (error: any) {
+      if (error.message === "EMAIL_EXISTS") {
+        throw new ConflictError("Email already registered");
+      }
+      throw error;
     }
-    throw error;
-  }
-});
+  },
+);
 
-export const login = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, password } = req.body as LoginInput;
+export const login = asyncHandler(
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const { email, password } = req.body as LoginInput;
 
-  try {
-    const { user, tokens } = await authService.login({ email, password });
+    try {
+      const { user, tokens } = await authService.login({ email, password });
 
-    res.cookie("refreshToken", tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+      res.cookie("refreshToken", tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          createdAt: user.createdAt,
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            createdAt: user.createdAt,
+          },
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
         },
-        accessToken: tokens.accessToken,
-      },
-      message: "Login successful",
-      timestamp: new Date().toISOString(),
-    };
+        message: "Login successful",
+        timestamp: new Date().toISOString(),
+      };
 
-    res.status(200).json(response);
-  } catch (error: any) {
-    throw new UnauthorizedError("Invalid email or password");
-  }
-});
+      res.status(200).json(response);
+    } catch (error: any) {
+      throw new UnauthorizedError("Invalid email or password");
+    }
+  },
+);
 
-export const refresh = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { refreshToken } = req.body;
+export const refresh = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const refreshToken = req.cookies?.refreshToken;
+    console.log(req.cookies, "ppppp");
+    if (!refreshToken) {
+      throw new UnauthorizedError("No refresh token provided");
+    }
 
-  if (!refreshToken) {
-    throw new BadRequestError("Refresh token is required");
-  }
+    try {
+      const { user, tokens } = await authService.refreshToken(refreshToken);
 
-  try {
-    const { user, tokens } = await authService.refreshToken(refreshToken);
+      // ✅ (optional but recommended) rotate refresh token
+      res.cookie("refreshToken", tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
 
-    const response: ApiResponse = {
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          createdAt: user.createdAt,
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            createdAt: user.createdAt,
+          },
+          accessToken: tokens.accessToken, // ✅ ONLY send access token
         },
-        ...tokens,
-      },
-      message: "Token refreshed successfully",
-      timestamp: new Date().toISOString(),
-    };
-    res.status(200).json(response);
-  } catch (error: any) {
-    throw new UnauthorizedError("Invalid or expired refresh token");
-  }
-});
+        message: "Token refreshed successfully",
+        timestamp: new Date().toISOString(),
+      };
 
-export const logout = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const userId = req.user?.userId;
+      res.status(200).json(response);
+    } catch (error) {
+      throw new UnauthorizedError("Invalid or expired refresh token");
+    }
+  },
+);
+export const logout = asyncHandler(
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const userId = req.user?.userId;
 
-  if (userId) {
-    await authService.logout(userId);
-  }
-
-  const response: ApiResponse = {
-    success: true,
-    message: "Logout successful",
-    timestamp: new Date().toISOString(),
-  };
-  res.status(200).json(response);
-});
-
-export const forgotPassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email } = req.body;
-
-  if (!email) {
-    throw new BadRequestError("Email is required");
-  }
-
-  await authService.forgotPassword({ email });
-
-  const response: ApiResponse = {
-    success: true,
-    message: "If the email exists, a password reset link has been sent",
-    timestamp: new Date().toISOString(),
-  };
-  res.status(200).json(response);
-});
-
-export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-  const { token, password } = req.body;
-
-  if (!token || !password) {
-    throw new BadRequestError("Token and new password are required");
-  }
-
-  if (password.length < 6) {
-    throw new BadRequestError("Password must be at least 6 characters");
-  }
-
-  try {
-    await authService.resetPassword(token, password);
+    if (userId) {
+      await authService.logout(userId);
+    }
 
     const response: ApiResponse = {
       success: true,
-      message: "Password reset successful",
+      message: "Logout successful",
       timestamp: new Date().toISOString(),
     };
     res.status(200).json(response);
-  } catch (error: any) {
-    throw new BadRequestError("Invalid or expired reset token");
-  }
-});
+  },
+);
+
+export const forgotPassword = asyncHandler(
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new BadRequestError("Email is required");
+    }
+
+    await authService.forgotPassword({ email });
+
+    const response: ApiResponse = {
+      success: true,
+      message: "If the email exists, a password reset link has been sent",
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  },
+);
+
+export const resetPassword = asyncHandler(
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      throw new BadRequestError("Token and new password are required");
+    }
+
+    if (password.length < 6) {
+      throw new BadRequestError("Password must be at least 6 characters");
+    }
+
+    try {
+      await authService.resetPassword(token, password);
+
+      const response: ApiResponse = {
+        success: true,
+        message: "Password reset successful",
+        timestamp: new Date().toISOString(),
+      };
+      res.status(200).json(response);
+    } catch (error: any) {
+      throw new BadRequestError("Invalid or expired reset token");
+    }
+  },
+);
