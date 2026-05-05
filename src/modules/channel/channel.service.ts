@@ -6,7 +6,7 @@ export class ChannelService {
     workspaceId: string,
     name: string | undefined,
     type: ChannelType,
-    memberIds: string[]
+    memberIds: string[],
   ): Promise<IChannel> {
     const workspace = await Workspace.findById(workspaceId);
     if (!workspace) throw new Error("Workspace not found");
@@ -33,19 +33,22 @@ export class ChannelService {
 
   async getChannelsForUserInWorkspace(
     workspaceId: string,
-    userId: string
+    userId: string,
   ): Promise<IChannel[]> {
     // A user can see public channels in the workspace + channels they are a member of
     return Channel.find({
       workspaceId: new Types.ObjectId(workspaceId),
-      $or: [
-        { type: "public" },
-        { members: new Types.ObjectId(userId) }
-      ]
+      $or: [{ type: "public" }, { members: new Types.ObjectId(userId) }],
+    }).populate({
+      path: "members",
+      select: "name email",
     });
   }
 
-  async joinChannel(channelId: string, userId: string): Promise<IChannel | null> {
+  async joinChannel(
+    channelId: string,
+    userId: string,
+  ): Promise<IChannel | null> {
     const channel = await Channel.findById(channelId);
     if (!channel) throw new Error("Channel not found");
 
@@ -53,9 +56,7 @@ export class ChannelService {
       throw new Error("Cannot join a direct message channel");
     }
 
-    const memberExists = channel.members.find(
-      (m) => m.toString() === userId
-    );
+    const memberExists = channel.members.find((m) => m.toString() === userId);
     if (memberExists) {
       throw new Error("User already in channel");
     }

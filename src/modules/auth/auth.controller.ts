@@ -47,15 +47,13 @@ export const register = asyncHandler(
 export const login = asyncHandler(
   async (req: AuthRequest, res: Response): Promise<void> => {
     const { email, password } = req.body as LoginInput;
-
     try {
       const { user, tokens } = await authService.login({ email, password });
 
       res.cookie("refreshToken", tokens.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: "strict",
       });
 
       const response: ApiResponse = {
@@ -84,7 +82,6 @@ export const login = asyncHandler(
 export const refresh = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const refreshToken = req.cookies?.refreshToken;
-    console.log(req.cookies, "ppppp");
     if (!refreshToken) {
       throw new UnauthorizedError("No refresh token provided");
     }
@@ -97,7 +94,6 @@ export const refresh = asyncHandler(
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
       const response: ApiResponse = {
