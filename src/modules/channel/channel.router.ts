@@ -10,6 +10,7 @@ router.use(authMiddleware);
 router.post("/", channelController.createChannel);
 // Uses workspaceId in params to fetch channels for that workspace
 router.get("/workspace/:workspaceId", channelController.getChannels);
+// router.post("/direct", channelController.getDirectChannel);
 router.post("/:id/join", channelController.joinChannel);
 
 export default router;

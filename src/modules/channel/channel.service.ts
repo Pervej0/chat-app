@@ -66,4 +66,41 @@ export class ChannelService {
 
     return channel;
   }
+
+  async getOrCreateDirectChannel(
+    workspaceId: string,
+    user1Id: string,
+    user2Id: string,
+  ): Promise<IChannel> {
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) throw new Error("Workspace not found");
+
+    // Check if both users are in the workspace
+    const member1 = workspace.members.find((m) => m.userId.toString() === user1Id);
+    const member2 = workspace.members.find((m) => m.userId.toString() === user2Id);
+
+    if (!member1 || !member2) {
+      throw new Error("Both users must be members of the workspace");
+    }
+
+    // Check if direct channel already exists
+    let channel = await Channel.findOne({
+      workspaceId: new Types.ObjectId(workspaceId),
+      type: "direct",
+      members: { $all: [new Types.ObjectId(user1Id), new Types.ObjectId(user2Id)] },
+    });
+
+    if (!channel) {
+      channel = await Channel.create({
+        workspaceId: new Types.ObjectId(workspaceId),
+        type: "direct",
+        members: [new Types.ObjectId(user1Id), new Types.ObjectId(user2Id)],
+      });
+    }
+
+    return channel.populate({
+      path: "members",
+      select: "name email",
+    });
+  }
 }

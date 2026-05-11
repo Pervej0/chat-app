@@ -54,4 +54,21 @@ export class ChannelController {
     const channel = await channelService.joinChannel(id, userId);
     res.status(200).json({ success: true, data: channel });
   });
+
+  getDirectChannel = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const { workspaceId, otherUserId } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const channel = await channelService.getOrCreateDirectChannel(
+      workspaceId,
+      userId,
+      otherUserId
+    );
+
+    res.status(200).json({ success: true, data: channel });
+  });
 }

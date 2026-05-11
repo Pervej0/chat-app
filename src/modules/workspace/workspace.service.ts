@@ -5,7 +5,7 @@ export class WorkspaceService {
   async createWorkspace(
     name: string,
     slug: string,
-    ownerId: string
+    ownerId: string,
   ): Promise<IWorkspace> {
     const existing = await Workspace.findOne({ slug });
     if (existing) {
@@ -23,23 +23,28 @@ export class WorkspaceService {
   }
 
   async getWorkspacesForUser(userId: string): Promise<IWorkspace[]> {
-    return Workspace.find({ "members.userId": new Types.ObjectId(userId) });
+    return Workspace.find({
+      "members.userId": new Types.ObjectId(userId),
+    }).populate("members.userId", "name email role");
   }
 
   async getWorkspaceById(workspaceId: string): Promise<IWorkspace | null> {
-    return Workspace.findById(workspaceId).populate("members.userId", "name email");
+    return Workspace.findById(workspaceId).populate(
+      "members.userId",
+      "name email",
+    );
   }
 
   async addMember(
     workspaceId: string,
     userId: string,
-    role: "admin" | "member" = "member"
+    role: "admin" | "member" = "member",
   ): Promise<IWorkspace | null> {
     const workspace = await Workspace.findById(workspaceId);
     if (!workspace) throw new Error("Workspace not found");
 
     const memberExists = workspace.members.find(
-      (m) => m.userId.toString() === userId
+      (m) => m.userId.toString() === userId,
     );
     if (memberExists) {
       throw new Error("User is already a member");

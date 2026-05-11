@@ -5,6 +5,9 @@ import { emitToChannel } from "../../socket";
 import { AuthRequest, ApiResponse } from "../../types";
 import { asyncHandler } from "../../middleware/errorHandler";
 import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from "../../utils/errors";
+import { ChannelService } from "../channel/channel.service";
+
+const channelService = new ChannelService();
 
 interface CreateMessageBody {
   channelId: string;
@@ -64,6 +67,50 @@ export const createMessage = asyncHandler(async (
     success: true,
     data: populatedMessage,
     message: "Message sent successfully",
+    timestamp: new Date().toISOString(),
+  };
+  res.status(201).json(response);
+});
+
+export const sendDirectMessage = asyncHandler(async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  const userId = req.user?.userId;
+  const { workspaceId, recipientId, content } = req.body;
+
+  if (!userId) {
+    throw new UnauthorizedError();
+  }
+
+  if (!workspaceId || !recipientId || !content) {
+    throw new BadRequestError("Workspace ID, recipient ID, and content are required");
+  }
+
+  // Get or create the direct channel
+  // This service already validates that both users are in the same workspace
+  const channel = await channelService.getOrCreateDirectChannel(
+    workspaceId,
+    userId,
+    recipientId
+  );
+
+  // Send the message
+  const message = await messageService.create(
+    { channelId: channel._id.toString(), content },
+    userId,
+  );
+
+  const populatedMessage = await messageService.findById(
+    message._id.toString(),
+  );
+
+  emitToChannel(channel._id.toString(), "newMessage", populatedMessage);
+
+  const response: ApiResponse = {
+    success: true,
+    data: populatedMessage,
+    message: "Direct message sent successfully",
     timestamp: new Date().toISOString(),
   };
   res.status(201).json(response);

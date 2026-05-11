@@ -21,13 +21,8 @@ const workspaceMemberSchema = new Schema<IWorkspaceMember>(
       ref: "User",
       required: true,
     },
-    role: {
-      type: String,
-      enum: ["admin", "member"],
-      default: "member",
-    },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const workspaceSchema = new Schema<IWorkspace>(
@@ -53,10 +48,13 @@ const workspaceSchema = new Schema<IWorkspace>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // workspaceSchema.index({ slug: 1 });
 workspaceSchema.index({ "members.userId": 1 });
 
-export const Workspace = mongoose.model<IWorkspace>("Workspace", workspaceSchema);
+export const Workspace = mongoose.model<IWorkspace>(
+  "Workspace",
+  workspaceSchema,
+);
