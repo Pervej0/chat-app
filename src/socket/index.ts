@@ -42,8 +42,10 @@ export const initializeSocket = (server: Server): void => {
       try {
         // Verify membership before joining
         const channel = await Channel.findById(channelId);
-        if (!channel || !channel.members.some(m => m.toString() === userId)) {
-          console.warn(`User ${userId} attempted to join unauthorized channel ${channelId}`);
+        if (!channel || !channel.members.some((m) => m.toString() === userId)) {
+          console.warn(
+            `User ${userId} attempted to join unauthorized channel ${channelId}`,
+          );
           return;
         }
 
@@ -63,7 +65,11 @@ export const initializeSocket = (server: Server): void => {
     // Handle sending a message (Generic for Channels and existing DMs)
     socket.on(
       "sendMessage",
-      async (data: { channelId: string; content: string; parentMessageId?: string }) => {
+      async (data: {
+        channelId: string;
+        content: string;
+        parentMessageId?: string;
+      }) => {
         const userId = socket.data.userId;
         if (!userId) {
           console.error("Cannot send message: user not authenticated");
@@ -73,19 +79,28 @@ export const initializeSocket = (server: Server): void => {
         try {
           // 1. Verify membership
           const channel = await Channel.findById(data.channelId);
-          if (!channel || !channel.members.some(m => m.toString() === userId)) {
+          if (
+            !channel ||
+            !channel.members.some((m) => m.toString() === userId)
+          ) {
             console.error("Unauthorized: User not in channel");
             return;
           }
 
           // 2. Save message
           const message = await messageService.create(
-            { channelId: data.channelId, content: data.content, parentMessageId: data.parentMessageId },
+            {
+              channelId: data.channelId,
+              content: data.content,
+              parentMessageId: data.parentMessageId,
+            },
             userId,
           );
 
           // 3. Populate and Prepare Response
-          const populatedMessage = await messageService.findById(message._id.toString());
+          const populatedMessage = await messageService.findById(
+            message._id.toString(),
+          );
           const senderObj = populatedMessage?.sender as any;
           const senderName = senderObj?.name || "Unknown";
 
@@ -105,16 +120,15 @@ export const initializeSocket = (server: Server): void => {
           emitToChannel(data.channelId, "newMessage", messageData);
 
           // 5. Notify all members individually (for notifications/unread counts)
-          channel.members.forEach(memberId => {
+          channel.members.forEach((memberId) => {
             if (memberId.toString() !== userId) {
               emitToUser(memberId.toString(), "newNotification", {
                 type: "message",
                 channelId: data.channelId,
-                message: messageData
+                message: messageData,
               });
             }
           });
-
         } catch (error) {
           console.error("Failed to send message via socket:", error);
         }
@@ -124,7 +138,11 @@ export const initializeSocket = (server: Server): void => {
     // Handle initiating/sending a Direct Message (using target userId)
     socket.on(
       "sendDirectMessage",
-      async (data: { workspaceId: string; recipientId: string; content: string }) => {
+      async (data: {
+        workspaceId: string;
+        recipientId: string;
+        content: string;
+      }) => {
         const userId = socket.data.userId;
         if (!userId) return;
 
@@ -133,16 +151,18 @@ export const initializeSocket = (server: Server): void => {
           const channel = await channelService.getOrCreateDirectChannel(
             data.workspaceId,
             userId,
-            data.recipientId
+            data.recipientId,
           );
 
           // 2. Reuse sendMessage logic or call it directly
           const message = await messageService.create(
             { channelId: channel._id.toString(), content: data.content },
-            userId
+            userId,
           );
 
-          const populatedMessage = await messageService.findById(message._id.toString());
+          const populatedMessage = await messageService.findById(
+            message._id.toString(),
+          );
           const senderObj = populatedMessage?.sender as any;
 
           const messageData = {
@@ -157,20 +177,22 @@ export const initializeSocket = (server: Server): void => {
           // 3. Emit to both users (using their personal rooms)
           emitToUser(userId, "newMessage", messageData);
           emitToUser(data.recipientId, "newMessage", messageData);
-          
+
           // Also emit a specific event for first-time DM initialization
           emitToUser(data.recipientId, "newDirectChannel", channel);
-
         } catch (error) {
           console.error("Failed to send direct message:", error);
         }
-      }
+      },
     );
 
     // Handle typing indicators
-    socket.on("typing", (data: { channelId: string; userId: string; userName: string }) => {
-      socket.to(`channel:${data.channelId}`).emit("userTyping", data);
-    });
+    socket.on(
+      "typing",
+      (data: { channelId: string; userId: string; userName: string }) => {
+        socket.to(`channel:${data.channelId}`).emit("userTyping", data);
+      },
+    );
 
     socket.on("stopTyping", (data: { channelId: string; userId: string }) => {
       socket.to(`channel:${data.channelId}`).emit("userStoppedTyping", data);
@@ -179,14 +201,21 @@ export const initializeSocket = (server: Server): void => {
     // Handle message read acknowledgment
     socket.on(
       "messageRead",
-      async (data: { channelId: string; messageId: string; userId: string }) => {
+      async (data: {
+        channelId: string;
+        messageId: string;
+        userId: string;
+      }) => {
         const userId = socket.data.userId;
         if (!userId || userId !== data.userId) return;
 
         try {
           // Verify membership
           const channel = await Channel.findById(data.channelId);
-          if (!channel || !channel.members.some(m => m.toString() === userId)) {
+          if (
+            !channel ||
+            !channel.members.some((m) => m.toString() === userId)
+          ) {
             return;
           }
 
@@ -212,7 +241,6 @@ export const initializeSocket = (server: Server): void => {
     });
   });
 };
-
 
 export const getIO = (): Server | null => io;
 
